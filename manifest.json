@@ -1,0 +1,9 @@
+{
+  "id": "shiyue-webclip",
+  "name": "识玥网页剪藏",
+  "version": "1.5.1",
+  "minAppVersion": "1.4.0",
+  "description": "把 X(Twitter)、微信公众号、小红书和普通网页/新闻链接一键剪藏进知识库，按规则自动分类归档，支持图片本地化与去重索引。",
+  "author": "识玥",
+  "isDesktopOnly": false
+}

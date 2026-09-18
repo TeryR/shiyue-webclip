@@ -1,0 +1,69 @@
+/* 识玥网页剪藏 - 设置与弹窗样式 */
+
+.shiyue-textarea {
+  width: 100%;
+  min-height: 140px;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.shiyue-input-wide {
+  width: 100%;
+}
+
+.shiyue-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.shiyue-table th,
+.shiyue-table td {
+  border: 1px solid var(--background-modifier-border);
+  padding: 4px 8px;
+  text-align: left;
+  font-size: 13px;
+  word-break: break-all;
+  vertical-align: top;
+}
+
+.shiyue-ok {
+  color: var(--text-success);
+}
+
+.shiyue-fail {
+  color: var(--text-error);
+}
+
+.shiyue-muted {
+  color: var(--text-muted);
+}
+
+.shiyue-preview-box {
+  max-height: 300px;
+  overflow: auto;
+  border: 1px solid var(--background-modifier-border);
+  padding: 8px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+
+.shiyue-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--background-secondary);
+  font-size: 12px;
+  margin-right: 6px;
+}
+
+.shiyue-warning {
+  color: var(--text-warning);
+}
+
+.shiyue-modal {
+  width: 680px;
+  max-width: 92vw;
+}

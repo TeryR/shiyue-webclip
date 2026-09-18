@@ -1,0 +1,19 @@
+# 依赖
+node_modules/
+
+# 构建产物（通过 GitHub Releases 分发）
+main.js
+dist/
+
+# 运行时用户数据（含小红书 Cookie / API Key，绝不入库）
+data.json
+
+# 测试构建缓存
+test/dist/
+
+# 内部交付物，不随源码发布
+识玥网页剪藏-验收与使用指南.html
+
+# 系统
+.DS_Store
+Thumbs.db

@@ -1,0 +1,40 @@
+import type { ShiyueSettings } from "./types";
+
+export const DEFAULT_RULES_TEXT = [
+  "# 格式：分类名 | 目标文件夹 | 标签(逗号分隔) | 关键词(逗号分隔，命中即计分)",
+  "科技/AI | 剪藏/科技 | tech, ai | AI, 人工智能, 大模型, LLM, 算法, 芯片, 开源, 编程",
+  "财经 | 剪藏/财经 | finance | 股市, 基金, 汇率, 财报, 投融资, 宏观经济, 美股",
+  "地产 | 剪藏/地产 | realestate | 房价, 楼市, 地产, 土拍, 物业, 保障房",
+  "设计 | 剪藏/设计 | design | 设计, 配色, 排版, UX, UI, 字体, 审美",
+  "产品 | 剪藏/产品 | product | 产品经理, 需求, 增长, 留存, 转化, 用户调研",
+  "生活 | 剪藏/生活 | life | 健身, 食谱, 旅行, 摄影, 家居, 读书",
+].join("\n");
+
+export const DEFAULT_SETTINGS: ShiyueSettings = {
+  saveFolder: "剪藏",
+  attachmentsFolder: "剪藏/附件",
+  filenameTemplate: "{{date}} {{title}}",
+  useWikilinks: true,
+  downloadImages: true,
+  maxImages: 20,
+  dedupe: true,
+  duplicateAction: "ask",
+  clipboardMode: "confirm",
+  previewBeforeSave: false,
+  appendSourceLink: false,
+  rulesText: DEFAULT_RULES_TEXT,
+  fallbackFolder: "剪藏/未分类",
+  useLlm: false,
+  llmEndpoint: "https://api.openai.com/v1/chat/completions",
+  llmApiKey: "",
+  llmModel: "gpt-4o-mini",
+  llmTimeoutMs: 20000,
+  translateWhenLlm: true,
+  xhsCookie: "",
+  requestTimeoutMs: 20000,
+  requestRetries: 2,
+  concurrency: 1,
+  interTaskDelayMs: 800,
+  index: [],
+  lastRun: null,
+};

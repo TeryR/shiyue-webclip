@@ -1,0 +1,22 @@
+{
+  "name": "shiyue-webclip",
+  "version": "1.5.1",
+  "description": "识玥网页剪藏：把 X(Twitter)、微信公众号、小红书和普通网页/新闻链接剪藏进 Obsidian，并按规则自动分类。",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "node test/build-tests.mjs && node test/dist/tests.mjs",
+    "zip": "node scripts/make-zip.mjs"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "esbuild": "^0.24.2",
+    "jsdom": "^24.1.3",
+    "obsidian": "^1.7.2",
+    "typescript": "^5.6.3"
+  }
+}
