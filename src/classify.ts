@@ -106,7 +106,7 @@ export async function classifyWithLlm(
   }
 }
 
-/** 合并规则结果与 LLM 结果：LLM 定分类名，规则表决定文件夹，标签取并集 */
+/** 合并规则结果与 LLM 结果：LLM 定分类名，文件夹优先取同名规则的配置，其次规则的命中结果，最后未分类目录 */
 export function mergeClassification(
   ruleRes: ClassResult | null,
   llmRes: { category: string; tags: string[] } | null,
@@ -118,7 +118,7 @@ export function mergeClassification(
     const tags = Array.from(new Set([...llmRes.tags, ...(ruleRes?.tags ?? [])])).slice(0, 6);
     return {
       category: llmRes.category,
-      folder: rule?.folder ?? fallbackFolder,
+      folder: rule?.folder ?? ruleRes?.folder ?? fallbackFolder,
       tags,
       via: "llm",
     };

@@ -67,7 +67,7 @@ export async function extractWeChat(
 
   // 发布时间：var ct = "1699..." 是最稳的；#publish_time 由前端渲染，常拿不到
   let publishTime: string | undefined;
-  const ct = html.match(/ct\s*=\s*"?(\d{10})"?/);
+  const ct = html.match(/\bct\s*=\s*"?(\d{10})"?/);
   if (ct) {
     publishTime = formatDateTime(parseInt(ct[1], 10) * 1000);
   }

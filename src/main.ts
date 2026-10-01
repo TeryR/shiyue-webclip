@@ -130,8 +130,9 @@ export default class ShiyueWebclipPlugin extends Plugin {
 
       const rules = parseRules(this.settings.rulesText);
       const ruleRes = classifyByRules(result.title, result.contentText || result.excerpt, rules);
+      // 规则命中优先（与设置页描述一致）；未命中才调 LLM，接口挂掉/未配置由 mergeClassification 兜底
       let llmRes: { category: string; tags: string[] } | null = null;
-      if (this.settings.useLlm && this.settings.llmApiKey) {
+      if (!ruleRes && this.settings.useLlm && this.settings.llmApiKey) {
         llmRes = await classifyWithLlm(
           this.fetcher,
           {
@@ -211,6 +212,7 @@ export default class ShiyueWebclipPlugin extends Plugin {
           filenameTemplate: this.settings.filenameTemplate,
           appendSourceLink: this.settings.appendSourceLink,
           useWikilinks: this.settings.useWikilinks,
+          clipperVersion: this.manifest.version,
         },
         imagesMap,
       );

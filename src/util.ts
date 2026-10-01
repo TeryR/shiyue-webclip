@@ -82,7 +82,8 @@ export function extractFirstUrl(text: string): string | null {
 /**
  * 规范化链接：去 hash、去追踪参数、小写域名。
  * 返回 url（用于抓取）与 key（用于去重索引）。
- * 小红书保留 xsec_token / xsec_source（拿正文必需）。
+ * 小红书保留 xsec_token / xsec_source（抓正文必需），但去重 key 会去掉它们——
+ * 同一篇笔记每次分享的 token 都不同，带着 token 去重会失效。
  */
 export function normalizeUrl(raw: string): { url: string; key: string } {
   const first = extractFirstUrl(raw) ?? raw.trim();
@@ -95,9 +96,8 @@ export function normalizeUrl(raw: string): { url: string; key: string } {
   u.hash = "";
   u.hostname = u.hostname.toLowerCase();
   const host = u.hostname;
-  const keep = /(^|\.)(xiaohongshu\.com|xhslink\.com)$/.test(host)
-    ? ["xsec_token", "xsec_source"]
-    : [];
+  const isXhs = /(^|\.)(xiaohongshu\.com|xhslink\.com)$/.test(host);
+  const keep = isXhs ? ["xsec_token", "xsec_source"] : [];
   const keys = Array.from(u.searchParams.keys());
   for (const k of keys) {
     const lk = k.toLowerCase();
@@ -105,7 +105,19 @@ export function normalizeUrl(raw: string): { url: string; key: string } {
     if (isTrack && !keep.includes(lk)) u.searchParams.delete(k);
   }
   const url = u.toString();
-  return { url, key: url };
+  let key = url;
+  if (isXhs) {
+    // 去重键按笔记本身（去掉分享 token）；短链在提取器解析成长链后也归一到同一 key
+    try {
+      const k2 = new URL(url);
+      k2.searchParams.delete("xsec_token");
+      k2.searchParams.delete("xsec_source");
+      key = k2.toString();
+    } catch {
+      key = url;
+    }
+  }
+  return { url, key };
 }
 
 export function sleep(ms: number): Promise<void> {

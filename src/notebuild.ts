@@ -6,6 +6,8 @@ export interface NoteBuildOptions {
   filenameTemplate: string;
   appendSourceLink: boolean;
   useWikilinks: boolean;
+  /** 插件版本，写进 frontmatter clipper 字段；不传则只写插件 id */
+  clipperVersion?: string;
 }
 
 /** 生成笔记文件名（不含 .md） */
@@ -77,7 +79,7 @@ export function buildNote(
     site: result.siteName,
     category: cls.category,
     tags: ["剪藏", ...cls.tags],
-    clipper: "shiyue-webclip/1.5.1",
+    clipper: opts.clipperVersion ? `shiyue-webclip/${opts.clipperVersion}` : "shiyue-webclip",
     clipped_at: now,
     status: warnings.length ? "partial" : "ok",
   });
@@ -108,11 +110,17 @@ export function buildNote(
     sections.push(originalBody);
   }
 
-  // 图片：web/微信的图已在正文 markdown 内，此处替换为本地路径
+  // 图片：web/微信的图已在正文 markdown 内，此处把远程地址替换为本地链接。
+  // 本地路径可能含空格（来自标题），wikilinks 模式用 ![[...]]，markdown 模式必须包 <...>，否则链接失效。
   let body = sections.join("\n");
   if (imagesMap.size) {
     for (const [remote, local] of imagesMap) {
-      body = body.split(remote).join(local);
+      const embed = opts.useWikilinks ? imageEmbed(local, true) : imageEmbed(local, false);
+      body = body.split(`![图片](${remote})`).join(embed);
+      // 兜底：不在上述精确形态里的裸地址（如正文引用了同一 URL）也替换成带尖括号的链接
+      if (body.includes(remote)) {
+        body = body.split(remote).join(opts.useWikilinks ? local : `<${local}>`);
+      }
     }
   }
 

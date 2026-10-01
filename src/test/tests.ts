@@ -284,6 +284,8 @@ async function runAll(): Promise<void> {
   eq(n1.url, "https://news.example.com/a/1?id=9", "去追踪参数 + 域名小写");
   const n2 = normalizeUrl("https://www.xiaohongshu.com/explore/abc?xsec_token=T&xsec_source=pc_user&utm_source=share");
   ok(n2.url.includes("xsec_token=T") && n2.url.includes("xsec_source=pc_user") && !n2.url.includes("utm_"), "小红书保留 xsec_token");
+  const n3 = normalizeUrl("https://www.xiaohongshu.com/explore/abc?xsec_token=OTHER&xsec_source=pc_user");
+  ok(n2.key === n3.key, "小红书去重键忽略分享 token（同一笔记不同分享可判重）");
   eq(parseTwitterDate("Sat Aug 29 12:00:00 +0000 2026"), "2026-08-29 20:00", "Twitter 时间解析(+08)");
   eq(formatDateTime(1756464000000).slice(0, 10), "2025-08-29", "毫秒时间戳格式化");
 
@@ -315,6 +317,10 @@ async function runAll(): Promise<void> {
   eq(c2, null, "未命中返回 null");
   const merged = mergeClassification(c2, { category: "教育", tags: ["学习"] }, rules, "剪藏/未分类");
   ok(merged.category === "教育" && merged.folder === "剪藏/未分类", "LLM 分类未匹配规则时落到未分类目录");
+  const merged3 = mergeClassification(c1, { category: "人工智能", tags: ["llm"] }, rules, "剪藏/未分类");
+  ok(merged3.category === "人工智能" && merged3.folder === "剪藏/科技", "LLM 分类名未匹配规则但规则已命中 → 回落规则文件夹（不进未分类）");
+  const merged4 = mergeClassification(c1, { category: "科技/AI", tags: [] }, rules, "剪藏/未分类");
+  ok(merged4.folder === "剪藏/科技", "LLM 分类名匹配规则 → 用规则文件夹");
   const merged2 = mergeClassification(null, null, rules, "剪藏/未分类");
   eq(merged2.category, "未分类", "全兜底 → 未分类");
 

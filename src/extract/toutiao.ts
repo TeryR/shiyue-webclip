@@ -140,10 +140,9 @@ export async function extractToutiao(
     if (ms > 1e12) publishTime = formatDateTime(ms);
   }
 
-  // 移动页图片是懒加载 data-src
+  // 移动页图片是懒加载 data-src（全尺寸图），优先于缩略 src
   articleEl.querySelectorAll("img").forEach((img) => {
-    const ds = img.getAttribute("data-src") || img.getAttribute("src");
-    if (ds && !img.getAttribute("src")) img.setAttribute("src", ds);
+    const ds = img.getAttribute("data-src");
     if (ds) img.setAttribute("src", ds);
   });
 
