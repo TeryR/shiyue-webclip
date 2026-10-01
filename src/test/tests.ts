@@ -505,8 +505,14 @@ async function runAll(): Promise<void> {
   trCalls = 0;
   const hugeText = "Hello world. ".repeat(3000);
   const tr3 = await translateWithLlm(trOkFetcher, TR_CFG, "Hello", hugeText);
-  eq(trCalls, 8, "超长文最多 8 块");
-  ok(tr3.ok && tr3.truncated && tr3.coveredChars < hugeText.length, "超长文标记截断且给出覆盖长度");
+  eq(trCalls, 11, "3.9 万字全文分块（11 块，不再 8 块封顶）");
+  ok(tr3.ok && !tr3.truncated && tr3.coveredChars === hugeText.length, "长文全文覆盖不截断");
+
+  trCalls = 0;
+  const extremeText = "Hello world. ".repeat(30000);
+  const tr6 = await translateWithLlm(trOkFetcher, TR_CFG, "Hello", extremeText);
+  eq(trCalls, 30, "超过 30 块（约 11 万字）才封顶");
+  ok(tr6.ok && tr6.truncated && tr6.coveredChars < extremeText.length, "极端超长标记截断且给出覆盖长度");
 
   const trBadFetcher: Fetcher = {
     ...fixtureFetcher,

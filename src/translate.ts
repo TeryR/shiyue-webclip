@@ -5,13 +5,16 @@ import type { Fetcher } from "./types";
  * 英文检测 + LLM 翻译。
  * 设计约束：
  * - 只在 useLlm 开启且填了 API Key 时才会被调用（main.ts 里控制），未开启 LLM 完全不触发；
- * - 长文按段落切块翻译（每块 ≤3800 字符，最多 8 块），避免输出截断；
+ * - 长文按段落切块翻译（每块 ≤3800 字符，最多 30 块 ≈ 11 万字，3 路并行），避免输出截断；
  * - 失败必须给出具体原因（HTTP 状态/超时/格式），上层写进笔记告警，用户能自查；
  * - 任何异常都返回 ok:false，上层降级为"保留英文原文 + 写告警"，绝不阻塞剪藏。
  */
 
 const CHUNK_SIZE = 3800;
-const MAX_CHUNKS = 8;
+/** 块数上限（约 11 万字）：正常文章不会触及；超过才放弃剩余部分并在笔记里告警（防失控保护） */
+const MAX_CHUNKS = 30;
+/** 并行翻译路数：长文耗时约为串行的 1/3 */
+const TRANSLATE_CONCURRENCY = 3;
 
 export interface TranslateConfig {
   endpoint: string;
@@ -36,8 +39,7 @@ export function isMostlyEnglish(text: string): boolean {
 }
 
 /** 按段落切块；单段超长则硬切，最多 max 块 */
-export function splitChunks(text: string, size = CHUNK_SIZE, max = MAX_CHUNKS): string[] {
-  const paragraphs = text.split(/\n{2,}/);
+export function splitChunks(text: string, size = CHUNK_SIZE, max = MAX_CHUNKS): string[] {  const paragraphs = text.split(/\n{2,}/);
   const chunks: string[] = [];
   let cur = "";
   for (const p of paragraphs) {
@@ -88,58 +90,78 @@ export async function translateWithLlm(
   const timeoutMs = Math.max(cfg.timeoutMs, 60000);
 
   let titleZh = "";
-  const translated: string[] = [];
+  const translated: string[] = new Array(chunks.length).fill("");
+  const results: { titleZh: string; contentZh: string }[] = new Array(chunks.length);
+  let firstError: string | null = null;
+  let next = 0;
 
-  for (let i = 0; i < chunks.length; i++) {
-    try {
-      const res = await fetcher.postJson(
-        endpoint,
-        {
-          model: cfg.model,
-          temperature: 0.2,
-          messages: [
-            { role: "system", content: SYS_PROMPT },
-            {
-              role: "user",
-              content: JSON.stringify({
-                title: i === 0 ? title : undefined,
-                content: chunks[i],
-              }),
-            },
-          ],
-        },
-        { Authorization: `Bearer ${cfg.apiKey}` },
-        timeoutMs,
-      );
-      if (res.status >= 400 || !res.json) {
-        return {
-          ok: false,
-          reason: `接口返回 HTTP ${res.status || "空"}（请检查 API 地址 / Key / 模型名是否匹配）`,
-        };
-      }
-      const j = res.json as { choices?: { message?: { content?: string } }[] };
-      const content = j.choices?.[0]?.message?.content ?? "";
-      const m = content.match(/\{[\s\S]*\}/);
-      if (!m) {
-        return { ok: false, reason: "模型返回内容里没有 JSON（检查模型名是否正确）" };
-      }
-      let parsed: { title_zh?: unknown; content_zh?: unknown };
+  /** 并行工作器：每次领一块翻译；任一块失败后停止领新任务 */
+  const worker = async (): Promise<void> => {
+    while (next < chunks.length && firstError === null) {
+      const i = next++;
+      const chunk = chunks[i];
       try {
-        parsed = JSON.parse(m[0]) as { title_zh?: unknown; content_zh?: unknown };
-      } catch {
-        return { ok: false, reason: "模型返回的 JSON 解析失败" };
+        const res = await fetcher.postJson(
+          endpoint,
+          {
+            model: cfg.model,
+            temperature: 0.2,
+            messages: [
+              { role: "system", content: SYS_PROMPT },
+              {
+                role: "user",
+                content: JSON.stringify({
+                  title: i === 0 ? title : undefined,
+                  content: chunk,
+                }),
+              },
+            ],
+          },
+          { Authorization: `Bearer ${cfg.apiKey}` },
+          timeoutMs,
+        );
+        if (res.status >= 400 || !res.json) {
+          firstError = `接口返回 HTTP ${res.status || "空"}（请检查 API 地址 / Key / 模型名是否匹配）`;
+          return;
+        }
+        const j = res.json as { choices?: { message?: { content?: string } }[] };
+        const content = j.choices?.[0]?.message?.content ?? "";
+        const m = content.match(/\{[\s\S]*\}/);
+        if (!m) {
+          firstError = "模型返回内容里没有 JSON（检查模型名是否正确）";
+          return;
+        }
+        let parsed: { title_zh?: unknown; content_zh?: unknown };
+        try {
+          parsed = JSON.parse(m[0]) as { title_zh?: unknown; content_zh?: unknown };
+        } catch {
+          firstError = "模型返回的 JSON 解析失败";
+          return;
+        }
+        if (typeof parsed.content_zh !== "string" || !parsed.content_zh.trim()) {
+          firstError = "模型返回缺少 content_zh 字段";
+          return;
+        }
+        results[i] = {
+          titleZh: i === 0 && typeof parsed.title_zh === "string" ? parsed.title_zh.trim() : "",
+          contentZh: parsed.content_zh.trim(),
+        };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        firstError = `请求异常：${msg}`;
+        return;
       }
-      if (typeof parsed.content_zh !== "string" || !parsed.content_zh.trim()) {
-        return { ok: false, reason: "模型返回缺少 content_zh 字段" };
-      }
-      if (i === 0 && typeof parsed.title_zh === "string" && parsed.title_zh.trim()) {
-        titleZh = parsed.title_zh.trim();
-      }
-      translated.push(parsed.content_zh.trim());
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      return { ok: false, reason: `请求异常：${msg}` };
     }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(TRANSLATE_CONCURRENCY, chunks.length) }, () => worker()),
+  );
+
+  if (firstError) return { ok: false, reason: firstError };
+  for (let i = 0; i < results.length; i++) {
+    if (i === 0 && results[0].titleZh) titleZh = results[0].titleZh;
+    translated[i] = results[i].contentZh;
   }
 
   return {
