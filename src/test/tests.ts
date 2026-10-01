@@ -324,6 +324,15 @@ async function runAll(): Promise<void> {
   const merged2 = mergeClassification(null, null, rules, "剪藏/未分类");
   eq(merged2.category, "未分类", "全兜底 → 未分类");
 
+  // 英文关键词整词匹配 + 省略文件夹挂到指定根目录
+  const rulesEn = parseRules("AI 技术 | | ai | AI,大模型\n编程 | | dev | Docker", "00-收集箱");
+  eq(rulesEn[0].folder, "00-收集箱/AI 技术", "省略文件夹 → 根目录/分类名");
+  eq(classifyByRules("邮件系统", "please check your email inbox", rulesEn), null, "英文整词匹配：email 不误命中 AI");
+  const en1 = classifyByRules("AI 原生服务", "AI applications are booming", rulesEn);
+  ok(en1 !== null && en1.category === "AI 技术", "英文整词命中 AI");
+  const en2 = classifyByRules("容器笔记", "docker and containers", rulesEn);
+  ok(en2 !== null && en2.folder === "00-收集箱/编程", "Docker 整词命中");
+
   console.log("\n[5] X(Twitter) 提取");
   const x1 = await extractX(fixtureFetcher, "https://x.com/testuser/status/1234567890123456789");
   ok(x1.contentText.includes("note_tweet 全文版本"), "长推文取 fxtwitter 全文（非 syndication 截断版）");

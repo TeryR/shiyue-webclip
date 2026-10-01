@@ -2,12 +2,15 @@ import type { ShiyueSettings } from "./types";
 
 export const DEFAULT_RULES_TEXT = [
   "# 格式：分类名 | 目标文件夹 | 标签(逗号分隔) | 关键词(逗号分隔，命中即计分)",
-  "科技/AI | 剪藏/科技 | tech, ai | AI, 人工智能, 大模型, LLM, 算法, 芯片, 开源, 编程",
-  "财经 | 剪藏/财经 | finance | 股市, 基金, 汇率, 财报, 投融资, 宏观经济, 美股",
-  "地产 | 剪藏/地产 | realestate | 房价, 楼市, 地产, 土拍, 物业, 保障房",
-  "设计 | 剪藏/设计 | design | 设计, 配色, 排版, UX, UI, 字体, 审美",
-  "产品 | 剪藏/产品 | product | 产品经理, 需求, 增长, 留存, 转化, 用户调研",
-  "生活 | 剪藏/生活 | life | 健身, 食谱, 旅行, 摄影, 家居, 读书",
+  "# 文件夹省略 = 保存目录/分类名；标签省略 = [分类名]；# 开头是注释；英文关键词按整词匹配",
+  "AI 技术 | | ai, llm | 大模型, 智能体, Agent, LLM, RAG, 上下文, 提示词, Prompt, 微调, 多模态, MCP, 向量, 知识库, 工作流, ChatGPT, GPT, Claude, Gemini, DeepSeek, Kimi, 通义千问",
+  "编程开发 | | dev | 编程, 代码, 程序员, 软件工程, 开源, Docker, 容器, Linux, 数据库, 后端, 前端, 架构, API, Git, GitHub, 部署, 服务器, 算法",
+  "AI 行业 | | ai-news | 融资, 估值, 独角兽, 市场规模, 商业化, 营收, 算力, 芯片, 英伟达, OpenAI, Anthropic, 行业报告",
+  "财经 | | finance | 股市, 基金, 汇率, 财报, 投融资, 宏观经济, 美股",
+  "地产 | | realestate | 房价, 楼市, 地产, 土拍, 物业, 保障房",
+  "设计 | | design | 设计, 配色, 排版, UX, UI, 字体, 审美",
+  "产品 | | product | 产品经理, 需求, 增长, 留存, 转化, 用户调研",
+  "生活 | | life | 健身, 食谱, 旅行, 摄影, 家居, 读书",
 ].join("\n");
 
 export const DEFAULT_SETTINGS: ShiyueSettings = {

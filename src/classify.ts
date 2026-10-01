@@ -11,9 +11,9 @@ export interface ClassRule {
 /**
  * 规则格式（每行一条，竖线分隔）：
  * 分类名 | 目标文件夹 | 标签1,标签2 | 关键词1,关键词2
- * 文件夹和标签可省略：文件夹默认 剪藏/分类名，标签默认 [分类名]
+ * 文件夹可省略：默认 `defaultRoot/分类名`（defaultRoot 通常传保存目录）；标签可省略：默认 [分类名]
  */
-export function parseRules(text: string): ClassRule[] {
+export function parseRules(text: string, defaultRoot = "剪藏"): ClassRule[] {
   const rules: ClassRule[] = [];
   for (const line of (text || "").split(/\r?\n/)) {
     const t = line.trim();
@@ -23,7 +23,7 @@ export function parseRules(text: string): ClassRule[] {
     const name = parts[0];
     rules.push({
       name,
-      folder: parts[1] || `剪藏/${name}`,
+      folder: parts[1] || `${defaultRoot}/${name}`,
       tags: parts[2]
         ? parts[2].split(/[,，]/).map((s) => s.trim()).filter(Boolean)
         : [name],
@@ -33,6 +33,23 @@ export function parseRules(text: string): ClassRule[] {
     });
   }
   return rules;
+}
+
+/**
+ * 关键词匹配：纯 ASCII 关键词按整词匹配（\b 词边界，避免 "AI" 误命中
+ * "email / training / detail" 这类含 ai 子串的单词）；含中文的关键词按子串匹配。
+ */
+function makeKeywordTest(kw: string): (hay: string) => boolean {
+  if (/^[A-Za-z0-9][A-Za-z0-9.+#_-]*$/.test(kw)) {
+    try {
+      const re = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+      return (hay) => re.test(hay);
+    } catch {
+      /* 正则构造失败退回子串 */
+    }
+  }
+  const lw = kw.toLowerCase();
+  return (hay) => hay.includes(lw);
 }
 
 /** 规则打分：命中关键词最多者胜；同分取靠前的规则（稳定） */
@@ -45,7 +62,8 @@ export function classifyByRules(
   let best: { rule: ClassRule; hits: string[] } | null = null;
   for (const rule of rules) {
     if (!rule.keywords.length) continue;
-    const hits = rule.keywords.filter((k) => hay.includes(k.toLowerCase()));
+    const tests = rule.keywords.map(makeKeywordTest);
+    const hits = rule.keywords.filter((_, i) => tests[i](hay));
     if (!hits.length) continue;
     if (!best || hits.length > best.hits.length) best = { rule, hits };
   }

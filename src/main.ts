@@ -128,7 +128,8 @@ export default class ShiyueWebclipPlugin extends Plugin {
         retries: this.settings.requestRetries,
       });
 
-      const rules = parseRules(this.settings.rulesText);
+      // 省略文件夹的规则默认挂到 保存目录/分类名 下
+      const rules = parseRules(this.settings.rulesText, this.settings.saveFolder);
       const ruleRes = classifyByRules(result.title, result.contentText || result.excerpt, rules);
       // 规则命中优先（与设置页描述一致）；未命中才调 LLM，接口挂掉/未配置由 mergeClassification 兜底
       let llmRes: { category: string; tags: string[] } | null = null;
@@ -341,7 +342,7 @@ export default class ShiyueWebclipPlugin extends Plugin {
       images: [],
       warnings: [],
     };
-    const rules = parseRules(this.settings.rulesText);
+    const rules = parseRules(this.settings.rulesText, this.settings.saveFolder);
     const ruleRes = classifyByRules(result.title, result.contentText, rules);
     const cls = mergeClassification(ruleRes, null, rules, this.settings.fallbackFolder);
     const filename = buildFilename(this.settings.filenameTemplate, {
@@ -455,7 +456,7 @@ class ShiyueSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("分类规则（每行一条）")
-      .setDesc("格式：分类名 | 目标文件夹 | 标签1,标签2 | 关键词1,关键词2。关键词命中最多者胜出；文件夹/标签可省略。以 # 开头的行是注释。")
+      .setDesc("格式：分类名 | 目标文件夹 | 标签1,标签2 | 关键词1,关键词2。关键词命中最多者胜出；文件夹/标签可省略（文件夹默认 保存目录/分类名）；英文关键词按整词匹配；以 # 开头的行是注释。")
       .addTextArea((ta) => {
         ta.setValue(s.rulesText).onChange((v) => { s.rulesText = v; save(); });
         ta.inputEl.addClass("shiyue-textarea");
